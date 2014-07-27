@@ -24,7 +24,10 @@
 	====================================
 	|             Changelog            |
 	====================================
-		v1.3c
+		v1.3d:
+		 - Added Ancient Apparition's Ice Vortex and Ice Blast to Damage calculation
+		 
+		v1.3c:
 		 - Fixed LuaEntityNPC:CanDie()
 		 - Hero name changed on classId for better performance
 		
@@ -1533,7 +1536,27 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source)
 			tempDmg = 0
 		else
 			--Magic resistance calculation
-			tempDmg = tempDmg*(1 - self.magicDmgResist)
+			local magicResist = self.magicDmgResist
+			
+			--Exception External Magic Resistance Reduction: Ancient Apparition: Ice Vortex
+			-- Damage Bonus depends on how much HP will entity have after damage is applied.
+			if self:DoesHaveModifier("modifier_ice_vortex") then
+				--Find Ancient Apparition
+				for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO})) do
+					if not l:IsIllusion() and l.team ~= self.team then
+						local spell = l:FindSpell("ancient_apparition_ice_vortex")
+						--If he has spell
+						if spell then
+							local magicResistReduction = {0.15,0.20,0.25,0.30}
+							if spell.level > 0 then
+								magicResist = magicResist*(1 - magicResistReduction[spell.level])
+							end
+						end
+					end
+				end
+			end
+				
+			tempDmg = tempDmg*(1 - magicResist)
 		end
 
 	--Pure Damage Calculation
@@ -1784,6 +1807,25 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source)
 					reduce = (1 + spell.level) * 0.04
 				end
 				tempDmg = tempDmg * (1 - reduce)
+			end
+		end
+		
+		--Exception External Damage Bonus: Ancient Apparition: Ice Blast
+		-- Damage Bonus depends on how much HP will entity have after damage is applied.
+		if self:DoesHaveModifier("modifier_ice_blast") then
+			--Find Ancient Apparition
+			for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO})) do
+				if not l:IsIllusion() and l.team ~= self.team then
+					local spell = l:FindSpell("ancient_apparition_ice_blast")
+					--If he has spell
+					if spell then
+						local HPpercentage = {10,11,12}
+						local percent = self.maxHealth/100
+						if math.max((self.health - tempDmg), 0)/percent <= HPpercentage[spell.level] then
+							tempDmg = tempDmg + math.max((self.health - tempDmg), 0)
+						end
+					end
+				end
 			end
 		end
 	end
