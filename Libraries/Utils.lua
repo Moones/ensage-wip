@@ -1,4 +1,3 @@
-require("libs.HeroInfo")
 --[[
  0 1 0 1 0 0 1 1    
  0 1 1 0 1 1 1 1        ____          __        __         
@@ -26,32 +25,28 @@ require("libs.HeroInfo")
 	|             Changelog            |
 	====================================
 		v1.5a
+	  
 	   	 - Full compliance with the new 6.84 patch
-
+	   
+	
 		v1.5
- 		
+		
 		 - Rework dmg calculations:
 			*now it corrected calculate multi amplification/reduction dmg
 			*some improve performance
 			*change main formula 
 			"dmg = dmg(1-Amp)(1+Reduce)(1-self.Resist)" on
 			"dmg = ((dmg * (1-AmpPercentBefore) - AmpStaticBefore) * (1 + AmpPercentAfter - ReducePercentAfter) * (1 + ampFromOtherSource)) * (1 - self.Resist) - reduceAfterStatic + IceBlastPersent"
+			
 	
-		v1.4d
-		 - Fixed LuaEntityNPC:IsPhysDmgImmune()
-	
-		v1.4c
-		 - Rework Damage Calculations.
-		 
-		v1.4b
-		 - Added Oracle: Fate's Edict to damage amplifications list.
-		
 		v1.4a
 		 - Rework for 6.82c
 		
+		
 		v1.4
 		 - Rework for 6.82
-		 		 
+		 
+		 
 		v1.3e:
 		 - Added transfered linken detection to LuaEntityNPC:IsLinkensProtected().
 		 - Fixed LuaEntityNPC:CanUseItems() and LuaEntityNPC:CanCast() for Divided We Stand clones.
@@ -390,20 +385,20 @@ utils.externalDmgReducs = {
 		reduce = {.1,.14,.18,.22},
 	},
 
-	--Nyx: Burrow
+	--Nyx: Borrow
 	{
 		modifierName = "modifier_nyx_assassin_burrow",
 		type = 1,
 		reduce = .4,
 	},
 	
-	--Winter Wyvern: Curse
+	--Wyvernx: Curse
 	{
 		modifierName = "modifier_winter_wyvern_winters_curse",
 		type = 1,
 		reduce = .7,
 	},
-
+	
 	--[[Kunkka: Ghost Ship
 	{
 		modifierName = "modifier_kunkka_ghost_ship_damage_absorb",
@@ -821,7 +816,6 @@ utils.immunity = {}
 utils.immunity.phys = {
 	--Omniknight: Guardian Angel
 	"modifier_omninight_guardian_angel",
-	--Winter Wyvern: Cold Embrace
 	"modifier_winter_wyvern_cold_embrace"
 }
 
@@ -902,9 +896,6 @@ end
 --Returns the 2D distance (ignoring height) between 2 units.
 --	Returns distance between unit and user's hero if only one unit is given.
 function GetDistance2D(a,b)
-	smartAssert(GetType(a) == "LuaEntity" or GetType(a) == "Vector" or GetType(a) == "Vector2D" or GetType(a) == "Projectile", "GetDistance2D: Invalid First Parameter:"..GetType(a))
-	smartAssert(GetType(b) == "LuaEntity" or GetType(b) == "Vector" or GetType(b) == "Vector2D" or GetType(a) == "Projectile" or GetType(b) == "nil", "GetDistance2D: Invalid Second Parameter:"..GetType(b))
-	if not b then b = entityList:GetMyHero() end
 	if a.x == nil or a.y == nil then
 		return GetDistance2D(a.position,b)
 	elseif b.x == nil or b.y == nil then
@@ -961,7 +952,6 @@ end
 --	Give the negative of a key code to check if it is not pressed
 --	Returns true if one of the key is down if the orCheck value is true
 function IsKeysDown(key_table,orCheck)
-	smartAssert(GetType(key_table) == "table", debug.getinfo(1, "n").name..": Invalid Key Table")
 	if not orCheck then orCheck = false end
     for i,v in ipairs(key_table) do
     	local bool = nil
@@ -993,7 +983,6 @@ end
 
 --Sets debug state for IsDebugActive checks and DebugPrint.
 function SetDebugState(state)
-	smartAssert(type(state) == "boolean", debug.getinfo(1, "n").name..": Invalid State")
 	utils.debugState[GetCallerScript()] = state
 end
 
@@ -1005,7 +994,6 @@ end
 --Prints a debug message in a format:
 --	[SCRIPTNAME] YourMessage
 function DebugPrint(text)
-	smartAssert(type(tostring(text)) == "string", debug.getinfo(1, "n").name..": Invalid Text")
 	if utils.debugState[GetCallerScript()] then
 		print("["..GetCallerScript().."] "..tostring(text))
 	end
@@ -1047,7 +1035,6 @@ function SelectUnit(unit)
 	if not unit then
 		unit = entityList:GetMyHero()
 	end
-	smartAssert(GetType(unit) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Unit")
 	local _prevSelect = {}
 	local selection = entityList:GetMyPlayer().selection
 	if selection and selection[1] and selection[1].handle ~= unit.handle or #selection ~= 1 then
@@ -1059,7 +1046,6 @@ end
 
 --Selects given table of units if there is any. Primary source for the table should be the "SelectUnit" function.
 function SelectBack(units)
-	smartAssert(type(units) == "table", debug.getinfo(1, "n").name..": Invalid Unit Table")
 	if #units > 0 then
 		for i,v in ipairs(units) do
 			if v.alive and v.visible then
@@ -1092,7 +1078,6 @@ end
 
 --Selects LuaEntity, Gives a Move command and Selects back the previous selection.
 function LuaEntityNPC:Move(vec,queue)
-	smartAssert(GetType(vec) == "Vector", debug.getinfo(1, "n").name..": Invalid Parameters")
 	local prev = SelectUnit(self)
 	if type(queue) == "boolean" then
 		entityList:GetMyPlayer():Move(vec,queue)
@@ -1104,7 +1089,6 @@ end
 
 --Selects LuaEntity, Gives an AttackMove command it and Selects back the previous selection.
 function LuaEntityNPC:AttackMove(vec,queue)
-	smartAssert(GetType(vec) == "Vector", debug.getinfo(1, "n").name..": Invalid Parameters")
 	local prev = SelectUnit(self)
 	if type(queue) == "boolean" then
 		entityList:GetMyPlayer():AttackMove(vec,queue)
@@ -1116,7 +1100,6 @@ end
 
 --Selects LuaEntity, Gives an Attack command it and Selects back the previous selection.
 function LuaEntityNPC:Attack(unit,queue)
-	smartAssert(GetType(unit) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Unit")
 	local prev = SelectUnit(self)
 	if type(queue) == "boolean" then
 		entityList:GetMyPlayer():Attack(unit,queue)
@@ -1128,7 +1111,6 @@ end
 
 --Selects LuaEntity, Gives an Follow command it and Selects back the previous selection.
 function LuaEntityNPC:Follow(unit,queue)
-	smartAssert(GetType(unit) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Unit")
 	local prev = SelectUnit(self)
 	if type(queue) == "boolean" then
 		entityList:GetMyPlayer():Follow(unit,queue)
@@ -1150,8 +1132,7 @@ function LuaEntityNPC:Stop(queue)
 end
 
 --Selects LuaEntity, Gives an Stop command it and Selects back the previous selection.
-function LuaEntityNPC:GiveItem(unit,item,queue)
-	smartAssert(GetType(unit) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Unit")
+function LuaEntityNPC:GiveItem(unit,item,queue)	
 	local prev = SelectUnit(self)
 	if queue then
 		entityList:GetMyPlayer():GiveItem(unit,item,queue)
@@ -1163,8 +1144,7 @@ end
 
 
 --Searchs the LuaEntity's spells for a spell with given name and returns it if there is any.
-function LuaEntityNPC:FindSpell(spellName)
-	smartAssert(type(spellName) == "string", debug and debug.getinfo(1, "n") and debug.getinfo(1, "n").name and debug.getinfo(1, "n").name..": Invalid Spell Name")
+function LuaEntityNPC:FindSpell(spellName)	
 	for i,spell in ipairs(self.abilities) do
 		if spell and spell.name == spellName then
 			return spell
@@ -1175,8 +1155,7 @@ end
 
 --Finds the spell with given name; If there is one selects LuaEntity, casts it and selects back the previous selection.
 --	Returns true if cast order is given.
-function LuaEntityNPC:CastSpell(spellName,target,queue)
-	smartAssert(type(spellName) == "string", debug.getinfo(1, "n").name..": Invalid Spell Name")
+function LuaEntityNPC:CastSpell(spellName,target,queue)	
 	if type(target) == "boolean" then queue = target target = nil end
 	local spell = self:FindSpell(spellName)
 	if spell then
@@ -1188,7 +1167,7 @@ function LuaEntityNPC:CastSpell(spellName,target,queue)
 				entityList:GetMyPlayer():UseAbility(spell)
 			end
 		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(spell,target,queue)
 			else
@@ -1202,8 +1181,7 @@ end
 
 --Finds the spell with given name; If there is one selects LuaEntity, toggles it and selects back the previous selection.
 --	Returns true if toggle order is given.
-function LuaEntityNPC:ToggleSpell(spellName,queue)
-	smartAssert(type(spellName) == "string", debug.getinfo(1, "n").name..": Invalid Spell Name")
+function LuaEntityNPC:ToggleSpell(spellName,queue)	
 	local spell = self:FindSpell(spellName)
 	if spell then
 		local prev = SelectUnit(self)
@@ -1220,8 +1198,7 @@ end
 --Finds the spell with given name; If there is one selects LuaEntity, casts it and selects back the previous selection.
 --	Checks both hero's state and spells state to cast successfully
 --	Returns true if cast order is "successfully" given.
-function LuaEntityNPC:SafeCastSpell(spellName,target,queue)
-	smartAssert(type(spellName) == "string", debug.getinfo(1, "n").name..": Invalid Spell Name")
+function LuaEntityNPC:SafeCastSpell(spellName,target,queue)	
 	local spell = self:FindSpell(spellName)
 	if type(target) == "boolean" then queue = target target = nil end
 	if spell and spell:CanBeCasted() and self:CanCast() and not (target and target.type == LuaEntity.TYPE_HERO and target.team ~= self.team and target:IsLinkensProtected() and spell:CanBeBlockedByLinkens() == true) then
@@ -1232,8 +1209,7 @@ function LuaEntityNPC:SafeCastSpell(spellName,target,queue)
 			else
 				entityList:GetMyPlayer():UseAbility(spell)
 			end
-		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+		else			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(spell,target,queue)
 			else
@@ -1248,8 +1224,7 @@ end
 --Finds the spell with given name; If there is one selects LuaEntity, toggles it and selects back the previous selection.
 --	Checks both hero's state and spells state to cast successfully
 --	Returns true if toggle order is "successfully" given.
-function LuaEntityNPC:SafeToggleSpell(spellName,queue)
-	smartAssert(type(spellName) == "string", debug.getinfo(1, "n").name..": Invalid Spell Name")
+function LuaEntityNPC:SafeToggleSpell(spellName,queue)	
 	local spell = self:FindSpell(spellName)
 	if spell and spell:CanBeCasted() and self:CanCast() then
 		local prev = SelectUnit(self)
@@ -1264,8 +1239,7 @@ function LuaEntityNPC:SafeToggleSpell(spellName,queue)
 end
 
 --Searchs the LuaEntity's inventory for an item with given name and returns it if there is any.
-function LuaEntityNPC:FindItem(itemName)
-	smartAssert(type(itemName) == "string", debug and debug.getinfo(1, "n") and debug.getinfo(1, "n").name and debug.getinfo(1, "n").name..": Invalid Item Name")
+function LuaEntityNPC:FindItem(itemName)	
 	local i = 1
 	for i,item in ipairs(self.items) do
 		if item and item.name == itemName then
@@ -1286,7 +1260,6 @@ end
 --Sets the LuaEntity's power treads (if there is) to given state
 --	Look to the globals for possible states
 function LuaEntityNPC:SetPowerTreadsState(state,queue)
-	smartAssert(state == PT_AGI or state == PT_STR or state == PT_INT, debug.getinfo(1, "n").name..": Invalid State")
 	local pt = self:FindItem("item_power_treads")
 	if pt then
 		local prev = SelectUnit(self)
@@ -1304,8 +1277,7 @@ end
 --Finds the spell with given name; If there is one selects LuaEntity, casts it and selects back the previous selection.
 --	If the item is a toggle item then toggles it.
 --	Returns true if cast order is given.
-function LuaEntityNPC:CastItem(itemName,target,queue)
-	smartAssert(type(itemName) == "string", debug.getinfo(1, "n").name..": Invalid Item Name")
+function LuaEntityNPC:CastItem(itemName,target,queue)	
 	local item = self:FindItem(itemName)
 	if type(target) == "boolean" then queue = target target = nil end
 	if item then
@@ -1322,8 +1294,7 @@ function LuaEntityNPC:CastItem(itemName,target,queue)
 			else
 				entityList:GetMyPlayer():UseAbility(item)
 			end
-		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+		else			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(item,target,queue)
 			else
@@ -1339,8 +1310,7 @@ end
 --	If the item is a toggle item then toggles it.
 --	Checks both hero's state and item state to cast successfully
 --	Returns true if cast order is "successfully" given.
-function LuaEntityNPC:SafeCastItem(itemName,target,queue)
-	smartAssert(type(itemName) == "string", debug.getinfo(1, "n").name..": Invalid Item Name")
+function LuaEntityNPC:SafeCastItem(itemName,target,queue)	
 	local item = self:FindItem(itemName)
 	if type(target) == "boolean" then queue = target target = nil end
 	if item and item:CanBeCasted() and self:CanUseItems() and not (target and target.type == LuaEntity.TYPE_HERO and target.team ~= self.team and target:IsLinkensProtected() and item:CanBeBlockedByLinkens() == true) then
@@ -1357,8 +1327,7 @@ function LuaEntityNPC:SafeCastItem(itemName,target,queue)
 			else
 				entityList:GetMyPlayer():UseAbility(item)
 			end
-		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+		else			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(item,target,queue)
 			else
@@ -1370,8 +1339,7 @@ function LuaEntityNPC:SafeCastItem(itemName,target,queue)
 	end
 end
 
-function LuaEntityNPC:FindAbility(abilityName)
-	smartAssert(type(abilityName) == "string")
+function LuaEntityNPC:FindAbility(abilityName)	
 	for i,v in ipairs(self.items) do
 		if v.name == abilityName then
 			return v
@@ -1387,8 +1355,7 @@ end
 
 --Selects LuaEntity, casts ability and selects back the previous selection.
 --	Returns true if cast order is given.
-function LuaEntityNPC:CastAbility(ability,target,queue)
-	smartAssert(GetType(ability) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Ability")
+function LuaEntityNPC:CastAbility(ability,target,queue)	
 	if type(target) == "boolean" then queue = target target = nil end
 	if ability then
 		local prev = SelectUnit(self)
@@ -1399,7 +1366,7 @@ function LuaEntityNPC:CastAbility(ability,target,queue)
 				entityList:GetMyPlayer():UseAbility(ability)
 			end
 		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(ability,target,queue)
 			else
@@ -1415,8 +1382,7 @@ end
 --Selects LuaEntity, casts ability and selects back the previous selection.
 --	Returns true if cast order is given.
 --	Checks both hero's state and item state to cast successfully
-function LuaEntityNPC:SafeCastAbility(ability,target,queue)
-	smartAssert(GetType(ability) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid Ability")
+function LuaEntityNPC:SafeCastAbility(ability,target,queue)	
 	if type(target) == "boolean" then queue = target target = nil end
 	if ability and ability:CanBeCasted() and ((ability.item and self:CanUseItems()) or (not ability.item and self:CanCast())) and not (target and target.type == LuaEntity.TYPE_HERO and target.team ~= self.team and target:IsLinkensProtected() and ability:CanBeBlockedByLinkens() == true) then
 		local prev = SelectUnit(self)
@@ -1427,7 +1393,7 @@ function LuaEntityNPC:SafeCastAbility(ability,target,queue)
 				entityList:GetMyPlayer():UseAbility(ability)
 			end
 		else
-			smartAssert(GetType(target) == "Vector" or GetType(target) == "LuaEntity", debug.getinfo(1, "n").name..": Invalid parameters")
+			
 			if type(queue) == "boolean" then
 				entityList:GetMyPlayer():UseAbility(ability,target,queue)
 			else
@@ -1469,8 +1435,7 @@ function LuaEntityNPC:GetChanneledAbility()
 end
 
 --Returns the distance between LuaEntity and the given unit/position.
-function LuaEntityNPC:GetDistance2D(a)
-	smartAssert(GetType(a) == "Vector" or GetType(a) == "LuaEntity" or GetType(a) == "Vector2D" or GetType(a) == "Projectile", "GetDistance2D: Invalid Parameter (Got "..GetType(a)..")")
+function LuaEntityNPC:GetDistance2D(a)	
 	if a.x == nil or a.y == nil then
 		return self:GetDistance2D(a.position)
 	else
@@ -1512,8 +1477,7 @@ function LuaEntityNPC:DoesHaveModifier(name)
 end
 
 --Returns the modifier if LuaEntity has the particular modifier.
-function LuaEntityNPC:FindModifier(name)
-	smartAssert(type(name) == "string", debug.getinfo(1, "n").name..": Invalid Modifier Name")
+function LuaEntityNPC:FindModifier(name)	
 	if self.modifiers then
 		for i,v in ipairs(self.modifiers) do
 			if v.name == name then
@@ -1573,6 +1537,7 @@ function LuaEntityNPC:ManaBurnDamageTaken(burnAmount,percent,dmgType,source)
 end
 
 --Returns the damage LuaEntity takes
+--For Phys spells just set throughBKB to true
 function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 	if not self:IsInvul() then
 		local tempDmg = dmg	
@@ -1750,7 +1715,7 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 				reduceProc = reduceProc + burst
 			end
 		end
-	
+		
 		--Exception External Reduction: Centaur: Stampede
 		if self:DoesHaveModifier("modifier_centaur_stampede") then
 			for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO, team = self.team, illusion = false})) do
@@ -1762,7 +1727,6 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 				end
 			end
 		end
-
 		
 		--Exception External Reduction: Medusa: Mana Shield
 		--	Reduction is dynamic, depends on the current mana condition
@@ -1822,7 +1786,7 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 		if source:DoesHaveModifier("modifier_bloodseeker_bloodrage") then		
 			--Find Blood Rage
 			for k,l in pairs(entityList:FindEntities({type = LuaEntity.TYPE_HERO,illusion = false})) do
-				if l.classId == CDOTA_Unit_Hero_Bloodseeker or l.classId == CDOTA_Unit_Hero_Rubick then
+				if l.classId == CDOTA_Unit_Hero_Bloodseeker then
 					local spell = l:FindSpell("bloodseeker_bloodrage")
 					--If spell is found do the calculation amplify damage
 					if spell then
@@ -1838,12 +1802,12 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 				end
 			end
 		end
-	
+		
 		--Exception External Reduction: Silver edge debuff
 		if source:DoesHaveModifier("modifier_silver_edge_debuff") then
 			ampFromME = ampFromME - 0.4
 		end
-
+		
 		--Exception External Damage Bonus: Ancient Apparition: Ice Blast
 		-- Damage Bonus depends on HP%.
 		if self:DoesHaveModifier("modifier_ice_blast")then
@@ -1928,60 +1892,13 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 	end
 end
 
-function LuaEntityNPC:GetTurnTime(pos) --Returns time in seconds of how much entity need to turn to given position
-	smartAssert(GetType(pos) == "Vector" or GetType(pos) == "LuaEntity" or GetType(pos) == "Vector2D" or GetType(pos) == "Projectile", debug.getinfo(1, "n").name..": Invalid Parameter")
-	if self.classId and heroInfo[self.classId] then
-		local turnrate = heroInfo[self.classId].turnRate
-		if GetType(turnrate) == "table" then
-			if self.classId == CDOTA_BaseNPC_Creep_Lane then
-				if self:IsRanged() then
-					turnrate = turnrate[2]
-				else
-					turnrate = turnrate[1]
-				end
-			else 
-				turnrate = turnrate[self.level]
-			end
-		end
-		if turnrate then
-			return (math.max(math.abs(FindAngleR(self) - math.rad(FindAngleBetween(self, pos))) - 0.69, 0)/(turnrate*(1/0.03)))
-		end
-	end
-	return (math.max(math.abs(FindAngleR(self) - math.rad(FindAngleBetween(self, pos))) - 0.69, 0)/(0.5*(1/0.03)))
-end
-
 function LuaEntityNPC:FindRelativeAngle(pos)
-	smartAssert(GetType(pos) == "Vector" or GetType(pos) == "LuaEntity" or GetType(pos) == "Vector2D" or GetType(pos) == "Projectile", debug.getinfo(1, "n").name..": Invalid Parameter")
 	if not pos.x then pos = pos.position end
 	return ((math.atan2(pos.y-self.position.y,pos.x-self.position.x) - self.rotR + math.pi) % (2 * math.pi)) - math.pi
 end
 
-function FindAngleBetween(first, second)
-	if not first.x then first = first.position end if not second.x then second = second.position end
-	xAngle = math.deg(math.atan(math.abs(second.x - first.x)/math.abs(second.y - first.y)))
-	if first.x <= second.x and first.y >= second.y then
-		return 90 - xAngle
-	elseif first.x >= second.x and first.y >= second.y then
-		return xAngle + 90
-	elseif first.x >= second.x and first.y <= second.y then
-		return 270 - xAngle
-	elseif first.x <= second.x and first.y <= second.y then
-		return xAngle + 270
-	end
-	return nil
-end
-
-function FindAngleR(entity)
-	if entity.rotR < 0 then
-		return math.abs(entity.rotR)
-	else
-		return 2 * math.pi - entity.rotR
-	end
-end
-
 --Returns the particular flag at the LuaEntity's unitState.
 function LuaEntityNPC:IsUnitState(flag)
-	smartAssert(type(flag) == "number", "IsTargetTeam: Invalid Flag")
 	return HasFlag(self.unitState,flag)
 end
 
@@ -2060,9 +1977,8 @@ end
 --== LuaEntityAbility (CDOTABaseAbility) FUNCTIONS ==--
 
 --Returns if LuaEntity can be casted.
-function LuaEntityAbility:CanBeCasted()
-	return self.cd == 0 and entityList:GetMyHero().mana >= self.manacost
-	--return self.state == LuaEntityAbility.STATE_READY
+function LuaEntityAbility:CanBeCasted(mana)
+	return self.cd == 0 and mana > self.manacost 
 end
 
 --Returns if LuaEntity can be blocked by Linken's Sphere.
@@ -2078,38 +1994,32 @@ end
 
 --Returns true if the ability has the specified flag in it's Behaviour Type
 function LuaEntityAbility:IsBehaviourType(flag)
-	smartAssert(type(flag) == "number", "IsBehaviourType: Invalid Flag")
 	return HasFlag(self.castType,flag)
 end
 
 --Returns true if the ability has the specified flag in it's Target Type
 function LuaEntityAbility:IsTargetType(flag)
-	smartAssert(type(flag) == "number", "IsTargetType: Invalid Flag")
 	return HasFlag(self.targetType,flag)
 end
 
 --Returns true if the ability has the specified flag in it's Target Team
 function LuaEntityAbility:IsTargetTeam(flag)
-	smartAssert(type(flag) == "number", "IsTargetTeam: Invalid Flag")
 	return HasFlag(self.targetTeamType,flag)
 end
 
 --Returns true if the ability has the specified flag in it's Ability Type
 function LuaEntityAbility:IsAbilityType(flag)
-	smartAssert(type(flag) == "number", "IsAbilityType: Invalid Flag")
 	return HasFlag(self.abilityType ,flag)
 end
 
 --Returns true if the ability has the specified flag in it's Damage Type
 function LuaEntityAbility:IsDamageType(flag)
-	smartAssert(type(flag) == "number", "IsDamageType: Invalid Flag")
 	return HasFlag(self.damageType,flag)
 end
 
 --Returns the special data with the given name if it exists
 --	If data has multiple possibilites then it gets the one with the revelant level
 function LuaEntityAbility:GetSpecialData(name,level)
-	smartAssert(type(name) == "string", "GetSpecialData: Invalid Name")
 	if not level then level = self.level end
 	local specials = self.specials
 	for _,v in ipairs(specials) do
@@ -2126,6 +2036,94 @@ function LuaEntityAbility:FindCastPoint()
 		return self:GetCastPoint(self.level)
 	else
 		return 0.1
+	end
+end
+
+function GetOffset(class)
+	if class == CDOTA_Unit_Hero_Sven then
+		return 150
+	elseif class == CDOTA_Unit_Hero_Lich then
+		return 225
+	elseif class == CDOTA_Unit_Hero_Tidehunter then
+		return 190
+	elseif class == CDOTA_Unit_Hero_Slark then
+		return 140
+	elseif class == CDOTA_Unit_Hero_Axe then
+		return 160
+	elseif class == CDOTA_Unit_Hero_SpiritBreaker then
+		return 160
+	elseif class == CDOTA_Unit_Hero_Pudge then
+		return 180
+	elseif class == CDOTA_Unit_Hero_StormSpirit then
+		return 170
+	elseif class == CDOTA_Unit_Hero_Juggernaut then
+		return 170
+	elseif class == CDOTA_Unit_Hero_Lion then
+		return 170
+	elseif class == CDOTA_Unit_Hero_TrollWarlord then
+		return 200
+	elseif class == CDOTA_Unit_Hero_Sniper then
+		return 110
+	elseif class == CDOTA_Unit_Hero_Lina then
+		return 170
+	elseif class == CDOTA_Unit_Hero_PhantomAssassin then
+		return 180
+	elseif class == CDOTA_Unit_Hero_PhantomLancer then
+		return 190
+	elseif class == CDOTA_Unit_Hero_Nevermore then
+		return 250
+	elseif class == CDOTA_Unit_Hero_Earthshaker then
+		return 155
+	elseif class == CDOTA_Unit_Hero_Furion then
+		return 180
+	elseif class == CDOTA_Unit_Hero_QueenOfPain then
+		return 145
+	elseif class == CDOTA_Unit_Hero_Invoker then
+		return 170
+	elseif class == CDOTA_Unit_Hero_Bristleback then
+		return 200
+	elseif class == CDOTA_Unit_Hero_Zuus then
+		return 130
+	elseif class == CDOTA_Unit_Hero_BountyHunter then
+		return 120
+	elseif class == CDOTA_Unit_Hero_Centaur then
+		return 220
+	elseif class == CDOTA_Unit_Hero_Puck then
+		return 165
+	elseif class == CDOTA_Unit_Hero_VengefulSpirit then
+		return 170
+	elseif class == CDOTA_Unit_Hero_Omniknight then
+		return 145
+	elseif class == CDOTA_Unit_Hero_Rubick then
+		return 170
+	elseif class == CDOTA_Unit_Hero_Undying then
+		return 250
+	elseif class == CDOTA_Unit_Hero_Alchemist then
+		return 200
+	elseif class == CDOTA_Unit_Hero_Winter_Wyvern then
+		return 200
+	elseif class == CDOTA_Unit_Hero_Mirana then
+		return 155
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	elseif class == CDOTA_Unit_Hero_Phoenix then
+		return 240
+	else
+		return 160
 	end
 end
 
@@ -2168,7 +2166,6 @@ utils.entityFuncs = {
 	{"DamageTaken",           "LuaEntityNPC"},
 	{"IsInvul",               "LuaEntityNPC"},
 	{"FindRelativeAngle",     "LuaEntityNPC"},
-	{"GetTurnTime",           "LuaEntityNPC"},
 	{"IsUnitState",           "LuaEntityNPC"},
 	{"IsRooted",              "LuaEntityNPC"},
 	{"IsDisarmed",            "LuaEntityNPC"},
