@@ -1894,6 +1894,7 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 								end
 							end
 						end
+					end
 					for i,v in ipairs(utils.damageBlocks) do
 						if self:DoesHaveModifier(v.modifierName) then
 							local block
@@ -1914,8 +1915,8 @@ function LuaEntityNPC:DamageTaken(dmg,dmgType,source,throughBKB)
 						end
 					end
 				end
+				tempDmg = ((tempDmg * (1-ManaShield-reduceOther) - reduceBlock) * (1 + amp - reduceProc) * (1 + ampFromME)) * (1 - self.dmgResist) - reduceStatic + AA 
 			end
-			tempDmg = ((tempDmg * (1-ManaShield-reduceOther) - reduceBlock) * (1 + amp - reduceProc) * (1 + ampFromME)) * (1 - self.dmgResist) - reduceStatic + AA 
 		end
 		if tempDmg > 0 then
 			return tempDmg
