@@ -1,6 +1,6 @@
 require("libs.Utils")
 require("libs.VectorOp")
-require("libs.Animations")
+require("libs.Animations2")
 
 --[[
  0 1 0 1 0 0 1 1    
@@ -12,7 +12,7 @@ require("libs.Animations")
  0 1 1 0 0 0 0 1    
  0 1 1 1 1 0 0 0    
 
-			SkillShot Library v1.4
+			SkillShot Library v1.5
 
 		Save as SkillShot.lua into Ensage\Scripts\libs.
 
@@ -24,6 +24,9 @@ require("libs.Animations")
 
 
 		Changelog:
+			v1.5
+			 - Added beta version of juke protection
+			 
 			v1.4:
 			 - Added Blind Prediction
 			 
@@ -68,15 +71,30 @@ function SkillShot.__Track()
 		if SkillShot.trackTable[v.handle] ~= nil and (not v.alive or not v.visible) then
 			SkillShot.trackTable[v.handle] = nil
 		end
-		if SkillShot.trackTable[v.handle] and (not SkillShot.trackTable[v.handle].last or (SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick) > ((100/Animations.maxCount)*client.latency)) then
-			if SkillShot.trackTable[v.handle].last ~= nil then
-				local speed = (v.position - SkillShot.trackTable[v.handle].last.pos)/(SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick)
+		if SkillShot.trackTable[v.handle] and (not SkillShot.trackTable[v.handle].last or (SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick) > math.max(math.abs(Animations.maxCount-client.latency),1)) then
+			if SkillShot.trackTable[v.handle].last ~= nil then			
+				local speed = (v.position - SkillShot.trackTable[v.handle].last.pos)/((SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick))
 				if not SkillShot.trackTable[v.handle].speed or GetDistance2D(speed,SkillShot.trackTable[v.handle].speed) > ((100/Animations.maxCount)*client.latency)*0.001 or speed == Vector(0,0,0) or (SkillShot.trackTable[v.handle].movespeed and v.movespeed ~= SkillShot.trackTable[v.handle].movespeed) 
 				or (SkillShot.trackTable[v.handle].rotR and SkillShot.trackTable[v.handle].rotR ~= v.rotR) then
 					SkillShot.trackTable[v.handle].speed = speed
 					SkillShot.trackTable[v.handle].movespeed = v.movespeed
 					SkillShot.trackTable[v.handle].rotR = v.rotR
 				end
+				if SkillShot.trackTable[v.handle].lastpred then
+					local pred = SkillShot.PredictedXYZ(v,(SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick), true)
+					local dist = GetDistance2D(v,pred)
+					if GetDistance2D(pred,SkillShot.trackTable[v.handle].lastpred.pred) > dist*(1.5+(SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick)*0.001+client.latency*0.001) then
+						if SkillShot.trackTable[v.handle].lastpred.pred2 and GetDistance2D(pred,SkillShot.trackTable[v.handle].lastpred.pred2) > dist*(1.5+(SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick)*0.001+client.latency*0.001) then
+							SkillShot.trackTable[v.handle].SpecialSpeed = Vector(0,0,0)
+						end
+						SkillShot.trackTable[v.handle].lastpred.pred2 = SkillShot.PredictedXYZ(v,((SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick)), true)
+					else
+						SkillShot.trackTable[v.handle].SpecialSpeed = nil
+					end
+				end	
+				if not SkillShot.trackTable[v.handle].lastpred then SkillShot.trackTable[v.handle].lastpred = {} end
+				SkillShot.trackTable[v.handle].lastpred.pred = SkillShot.PredictedXYZ(v,((SkillShot.currentTick - SkillShot.trackTable[v.handle].last.tick)), true)
+				SkillShot.trackTable[v.handle].lastpred.dist = GetDistance2D(v,SkillShot.trackTable[v.handle].lastpred.pred)
 			end
 			SkillShot.trackTable[v.handle].last = {pos = v.position, tick = SkillShot.currentTick}
 		end
@@ -91,16 +109,19 @@ function SkillShot.InFront(t,distance)
 	end
 end
 
-function SkillShot.PredictedXYZ(t,delay)
+function SkillShot.PredictedXYZ(t,delay,test)
 	if SkillShot.isIdle(t) then return t.position
 	elseif SkillShot.trackTable[t.handle] and SkillShot.trackTable[t.handle].speed and (GetType(SkillShot.trackTable[t.handle].speed) == "Vector" or GetType(SkillShot.trackTable[t.handle].speed) == "Vector2D") and (SkillShot.trackTable[t.handle].speed ~= Vector(0,0,0) or t.activity ~= LuaEntityNPC.ACTIVITY_MOVE) then	
 		local pred = t.position + SkillShot.trackTable[t.handle].speed * delay
 		local pred2 = SkillShot.InFront(t,(delay/1000)*t.movespeed)
-		local v = pred2
+		local v = pred
 		if pred and v then
-			if t.activity ~= LuaEntityNPC.ACTIVITY_MOVE or (GetDistance2D(pred,v) > GetDistance2D(t,v)) or SkillShot.AbilityMove(t) or (not t:CanMove() and not t:DoesHaveModifier("modifier_invoker_cold_snap_freeze")) or (SkillShot.trackTable[t.handle].rotR and SkillShot.trackTable[t.handle].rotR ~= t.rotR) then
+			if t.activity ~= LuaEntityNPC.ACTIVITY_MOVE or (GetDistance2D(pred,v) > GetDistance2D(t,v)) or SkillShot.AbilityMove(t) or (not t:CanMove() or t:DoesHaveModifier("modifier_invoker_cold_snap_freeze")) then
 				v = pred
 			end
+		end
+		if SkillShot.trackTable[t.handle].SpecialSpeed and not test then
+			v = t.position + SkillShot.trackTable[t.handle].SpecialSpeed * delay
 		end
 		return Vector(v.x,v.y,t.position.z)
 	end
@@ -141,10 +162,26 @@ function SkillShot.BlindSkillShotXYZ(source,t,speed,castpoint)
 		local distance = GetDistance2D(SkillShot.BlindPredictionTable[t.handle].range, source)
 		return Vector(SkillShot.BlindPredictionTable[t.handle].range.x + SkillShot.BlindPredictionTable[t.handle].move * (distance/(speed * math.sqrt(1 - math.pow(SkillShot.BlindPredictionTable[t.handle].move/speed,2))) + castpoint) * math.cos(t.rotR), SkillShot.BlindPredictionTable[t.handle].range.y + SkillShot.BlindPredictionTable[t.handle].move * (distance/(speed * math.sqrt(1 - math.pow(SkillShot.BlindPredictionTable[t.handle].move/speed,2))) + castpoint) * math.sin(t.rotR),SkillShot.BlindPredictionTable[t.handle].range.z)
 	end
-end			
+end		
+
+function SkillShot.BlockableBlindSkillShotXYZ(source,t,speed,castpoint,aoe,team)
+	if team == nil then
+		team = false
+	end
+	local pred 
+	if source and SkillShot.BlindPredictionTable[t.handle] and SkillShot.BlindPredictionTable[t.handle].range then
+		local distance = GetDistance2D(SkillShot.BlindPredictionTable[t.handle].range, source)
+		pred = Vector(SkillShot.BlindPredictionTable[t.handle].range.x + SkillShot.BlindPredictionTable[t.handle].move * (distance/(speed * math.sqrt(1 - math.pow(SkillShot.BlindPredictionTable[t.handle].move/speed,2))) + castpoint) * math.cos(t.rotR), SkillShot.BlindPredictionTable[t.handle].range.y + SkillShot.BlindPredictionTable[t.handle].move * (distance/(speed * math.sqrt(1 - math.pow(SkillShot.BlindPredictionTable[t.handle].move/speed,2))) + castpoint) * math.sin(t.rotR),SkillShot.BlindPredictionTable[t.handle].range.z)
+	end
+	if pred and (GetType(pred) == "Vector" or GetType(pred) == "Vector2D") and not SkillShot.__GetBlock(source.position or source,pred,t,aoe,team) then
+		return pred
+	end
+end		
 
 function SkillShot.BlindPrediction()
-	for i,t in ipairs(entityList:GetEntities({type = LuaEntity.TYPE_HERO})) do
+	local enemies = entityList:GetEntities({type = LuaEntity.TYPE_HERO})
+	for i = 1, #enemies do
+		local t = enemies[i]
 		if not t:IsIllusion() then
 			if SkillShot.BlindPredictionTable[t.handle] == nil and t.alive then
 				SkillShot.BlindPredictionTable[t.handle] = {}
@@ -194,62 +231,91 @@ function SkillShot.__GetBlock(v1,v2,target,aoe,team)
 	local hero = entityList:GetEntities({type=LuaEntity.TYPE_HERO,alive=true,team=enemyTeam,visible=true})
 	local neutrals = entityList:GetEntities({classId=CDOTA_BaseNPC_Creep_Neutral,alive=true,visible=true})
 	local golem = entityList:GetEntities({classId=CDOTA_BaseNPC_Warlock_Golem,alive=true,team=enemyTeam,visible=true})
+	local spiders = entityList:GetEntities({classId=CDOTA_Unit_Broodmother_Spiderling,alive=true,team=enemyTeam,visible=true})
+	local boar = entityList:GetEntities({classId=CDOTA_Unit_Hero_Beastmaster_Beasts,alive=true,visible=true,team=enemyTeam})
+	local familiars = entityList:GetEntities({classId=CDOTA_Unit_VisageFamiliar,alive=true,visible=true,team=enemyTeam})
+	local bear = entityList:GetEntities({classId=CDOTA_Unit_SpiritBear,alive=true,visible=true,team=enemyTeam})[1] 
+	local zombies = entityList:GetEntities({classId=CDOTA_Unit_Undying_Zombie,alive=true,visible=true,team=enemyTeam})
 	if team == true then
 		creeps = entityList:GetEntities({classId=CDOTA_BaseNPC_Creep_Lane,alive=true,visible=true})
 		forge = entityList:GetEntities({classId=CDOTA_BaseNPC_Invoker_Forged_Spirit,alive=true,visible=true})
 		hero = entityList:GetEntities({type=LuaEntity.TYPE_HERO,alive=true,visible=true})
 		golem = entityList:GetEntities({classId=CDOTA_BaseNPC_Warlock_Golem,alive=true,visible=true})
+		spiders = entityList:GetEntities({classId=CDOTA_Unit_Broodmother_Spiderling,alive=true,visible=true})
+		boar = entityList:GetEntities({classId=CDOTA_Unit_Hero_Beastmaster_Beasts,alive=true,visible=true})
+		familiars = entityList:GetEntities({classId=CDOTA_Unit_VisageFamiliar,alive=true,visible=true})
+		bear = entityList:GetEntities({classId=CDOTA_Unit_SpiritBear,alive=true,visible=true})[1]
+		zombies = entityList:GetEntities({classId=CDOTA_Unit_Undying_Zombie,alive=true,visible=true})
 	elseif team == "ally" then
 		creeps = entityList:GetEntities({classId=CDOTA_BaseNPC_Creep_Lane,alive=true,visible=true,team=me.team})
 		forge = entityList:GetEntities({classId=CDOTA_BaseNPC_Invoker_Forged_Spirit,alive=true,visible=true,team=me.team})
 		hero = entityList:GetEntities({type=LuaEntity.TYPE_HERO,alive=true,visible=true,team=me.team})
 		golem = entityList:GetEntities({classId=CDOTA_BaseNPC_Warlock_Golem,alive=true,visible=true,team=me.team})
+		spiders = entityList:GetEntities({classId=CDOTA_Unit_Broodmother_Spiderling,alive=true,team=me.team,visible=true})
+		boar = entityList:GetEntities({classId=CDOTA_Unit_Hero_Beastmaster_Beasts,alive=true,visible=true,team=me.team})
+		familiars = entityList:GetEntities({classId=CDOTA_Unit_VisageFamiliar,alive=true,visible=true,team=me.team})
+		bear = entityList:GetEntities({classId=CDOTA_Unit_SpiritBear,alive=true,team=me.team})[1]
+		zombies = entityList:GetEntities({classId=CDOTA_Unit_Undying_Zombie,alive=true,visible=true,team=me.team})
 	end
-	for k,v in pairs(creeps) do if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then block[#block + 1] = v end end
-	for k,v in pairs(forge) do if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then block[#block + 1] = v end end
-	for k,v in pairs(hero) do if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then block[#block + 1] = v end end
-	for k,v in pairs(golem) do if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then block[#block + 1] = v end end	
-	for k,v in pairs(neutrals) do if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then block[#block + 1] = v end end
-	local block = SkillShot.__CheckBlock(block,v1,v2,aoe,target)
+	local unitsCount = 0
+	for i = 1, #creeps do local v = creeps[i] if (not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone")) and v.spawned then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #forge do local v = forge[i] if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #hero do local v = hero[i] if (not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone")) and v ~= me then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #golem do local v = golem[i] if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #neutrals do local v = neutrals[i] if (not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone")) and v.spawned then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #spiders do local v = spiders[i] if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #boar do local v = boar[i] if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #familiars do local v = familiars[i] if not v:IsInvul() or v:DoesHaveModifier("modifier_eul_cyclone") then unitsCount = unitsCount + 1 block[unitsCount] = v end end
+	for i = 1, #zombies do local v = zombies[i] unitsCount = unitsCount + 1 block[unitsCount] = v end
+	if bear and (not bear:IsInvul() or bear:DoesHaveModifier("modifier_eul_cyclone")) then unitsCount = unitsCount + 1 block[unitsCount] = bear end
+	local block = SkillShot.__CheckBlock(block,v1,v2,aoe+50,target)
 	return block
 end
 
 function SkillShot.__CheckBlock(units,v1,v2,aoe,target)
 	distance = GetDistance2D(v1,v2)
-	local i = 1
+	local mathmax = math.max
 	local block = false
 	local filterunits = {}
-	for k,v in pairs(units) do
-		if v ~= nil and v.handle ~= target.handle and v.GetDistance2D then
-			if v1 ~= nil and v:GetDistance2D(v1) < distance and v:GetDistance2D(target) < distance then
-				filterunits[#filterunits + 1] = v
+	local unitsCount = 0
+	for i = 1, #units do
+		local v = units[i]
+		if v ~= nil and v.handle ~= target.handle then
+			if v1 ~= nil and GetDistance2D(v.position,v1) < distance and GetDistance2D(v.position,target) < distance then
+				unitsCount = unitsCount + 1
+				filterunits[unitsCount] = v
 			end
 		end
 	end
-	for i,v in ipairs(filterunits) do
-		local vec = (v2 - v1)
-		local closest = SkillShot.GetClosestPoint(v1,vec:GetXYAngle(),v.position,distance-aoe)
+	local vec = (v2 - v1)
+	local vecAngle = vec:GetXYAngle()
+	local mathfloor, mathsqrt = math.floor, math.sqrt
+	for i = 1, #filterunits do
+		local v = filterunits[i]
+		local closest = SkillShot.GetClosestPoint(v1,vecAngle,v.position,distance)
 		if closest then
-			if GetDistance2D(v,closest) < aoe then
+			if GetDistance2D(v.position,closest) < aoe then
 				block = true
+				break
 			end
-		end
+		end	
 	end
 	return block
 end
 
 function SkillShot.GetClosestPoint(A, _a, P,e)
-    local l1 = {x = math.tan(_a), c = A.y - A.x * math.tan(_a)}
-    local l2 = {x = math.tan(_a+math.pi/2), c =  P.y - P.x * math.tan(_a+math.pi/2)}
+	local mathtan, mathpi, mathfloor, mathcos, mathsin = math.tan, math.pi, math.floor, math.cos, math.sin
+	local l1 = {x = mathtan(_a), c = A.y - A.x * mathtan(_a)}
+    local l2 = {x = mathtan(_a+mathpi/2), c =  P.y - P.x * mathtan(_a+mathpi/2)}
 
     local final = Vector((l2.c-l1.c)/(l1.x-l2.x),l1.x*(l2.c-l1.c)/(l1.x-l2.x) + l1.c,A.z)
 
     local length = GetDistance2D(final, A)
-    if math.floor((final.x - A.x)/length) == math.floor(math.cos(_a)) and math.floor((final.y - A.y)/length) == math.floor(math.sin(_a)) then
+    if mathfloor((final.x - A.x)/length) == mathfloor(mathcos(_a)) and mathfloor((final.y - A.y)/length) == mathfloor(mathsin(_a)) then
         if length <= e then
             return final
         else
-            return Vector(A.x + e*math.cos(_a),A.y + e*math.sin(_a),A.z)
+            return Vector(A.x + e*mathcos(_a),A.y + e*mathsin(_a),A.z)
         end
     end
 end
@@ -260,7 +326,7 @@ function SkillShot.AbilityMove(t)
 end
 	
 function SkillShot.isIdle(t)
-	return (SkillShot.trackTable[t.handle] and SkillShot.trackTable[t.handle].speed and SkillShot.trackTable[t.handle].speed == Vector(0,0,0)) or t:DoesHaveModifier("modifier_cyclone") or t:DoesHaveModifier("modifier_invoker_tornado") or (t.activity == LuaEntityNPC.ACTIVITY_IDLE and not SkillShot.AbilityMove(t))
+	return (SkillShot.trackTable[t.handle] and SkillShot.trackTable[t.handle].speed and SkillShot.trackTable[t.handle].speed == Vector(0,0,0)) or t:DoesHaveModifier("modifier_eul_cyclone") or t:DoesHaveModifier("modifier_invoker_tornado") or (t.activity == LuaEntityNPC.ACTIVITY_IDLE and not SkillShot.AbilityMove(t)) or Animations.isAttacking(t)
 end
 
 scriptEngine:RegisterLibEvent(EVENT_FRAME,SkillShot.__TrackTick)
